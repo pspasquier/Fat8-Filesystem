@@ -3,144 +3,118 @@
 #include <ctype.h>
 #include <string.h>
 #include "filesystem.h"
-#define clear() printf("\033[H\033[J");
-#define INPUT_MAX 2009
-#define	CD 5862188
-#define DIR 193453540
-#define DISK 6383966928
-#define EDIT 6383997099
-#define EXIT 6384018879
-#define CLEAR 210669815020
-#define MKDIR 210681637468
-#define MKFILE 6952494108189
-#define MOVE 6384296988
-#define RENAME 6952682948445
-#define RM 5862692
-#define RF 5862685
-#define DEFRAG 6952134783566
 
-char* toUpper(char* s){
-    for(char *p=s; *p; p++) *p=toupper(*p);
-    return s;
+#define clear()   printf("\033[H\033[J")
+#define INPUT_MAX 200
+
+static void str_to_upper(char *s) {
+    for (; *s; s++) *s = toupper(*s);
 }
 
-char* toLower(char* s){
-	for(char *p=s; *p; p++) *p=tolower(*p);
-    return s;
+static void str_to_lower(char *s) {
+    for (; *s; s++) *s = tolower(*s);
 }
 
-/*
-** Objetive: given a string, return a hash of 4 bytes. 
-*/
-unsigned long hash(const char *str) {
-    unsigned long hash = 5381;  
-    int c;
-    while ((c = *str++))
-        hash = ((hash << 5) + hash) + c;
-    return hash;
-}
+static void terminal(void) {
+    char  input[INPUT_MAX + 1];
+    char *cmd, *arg1, *arg2;
+	int exit = 0;
+	clear();
 
-void terminal(){
-    clear();
-	char input[INPUT_MAX + 1];
-	char *command;
-	char *arg1;
-	char *arg2;
-	do{
-		printf("\033[1;32m%s:\033[1;36m%s\033[0m$ ", get_diskname(), get_path());
-		fflush(stdin);
-    	fgets(input, INPUT_MAX, stdin);
+    while (exit == 0) {
+        printf("\033[1;32m%s:\033[1;36m%s\033[0m$ ", get_diskname(), get_path());
+        fflush(stdout);
+        if (!fgets(input, INPUT_MAX, stdin))
+			break;
+
         input[strcspn(input, "\n")] = 0;
-		command = toUpper(strtok(input, " "));
-		arg1    = strtok(NULL, " ");
-		switch(hash(command)) {
-			case CD:
-				if(arg1 != NULL){
-					arg1 = toLower(arg1);
-					cd(arg1);
-				}
-			 	break;
-			case DIR:
-				dir();
-				break;
-			case DISK:
-			 	size();
-			 	break;
-			case RM:
-				if(arg1 != NULL){
-					arg1 = toLower(arg1);
-					rm(arg1);
-				}
-			  	break;
-			case MKDIR:
-				if(arg1 != NULL){
-					arg1 = toLower(arg1);
-					mkdir(arg1);
-				}
-			 	break;
-			case MKFILE:
-				if(arg1 != NULL){
-					arg1 = toLower(arg1);
-					mkfile(arg1);
-				}
-			  	break;
-			case EDIT:
-				arg2 = strtok(NULL, "\"");
-				if(arg1 != NULL && arg2 != NULL){
-					arg1 = toLower(arg1);
-					edit(arg1, arg2);
-				}
-			 	break;
-			case MOVE:
-				arg2 = strtok(NULL, " ");
-				if(arg1 != NULL && arg2 != NULL){
-					arg1 = toLower(arg1);
-					arg2 = toLower(arg2);
-					move(arg1, arg2);
-				}
-			  	break;
-			case RENAME:
-				arg2 = strtok(NULL, " ");
-				if(arg1 != NULL && arg2 != NULL){
-					arg1 = toLower(arg1);
-					arg2 = toLower(arg2);
-					fs_rename(arg1, arg2);
-				}	
-				break;
-			case RF:
-				if(arg1 != NULL){
-					arg1 = toLower(arg1);
-					rf(arg1);
-				}
-				break;
-			case DEFRAG:
-				defrag();
-				break;
-			case CLEAR:
-				clear();
-				break;
-			case EXIT:
-				printf("Logout\n");
-				break;
-			default:
-				printf("[ERROR] '%s' is not a valid command.\n", command);
-			}
-	}while(hash(command) != EXIT);
-	return;
-}
+        cmd  = strtok(input, " ");
 
+        if (!cmd)
+			continue;
+        str_to_upper(cmd);
+
+        if (strcmp(cmd, "CD") == 0) {
+			arg1 = strtok(NULL, " ");
+            if (arg1) { 
+				str_to_lower(arg1);
+				cd(arg1); 
+			}
+        } else if (strcmp(cmd, "DIR") == 0) {
+            dir();
+        } else if (strcmp(cmd, "DISK") == 0) {
+            size();
+        } else if (strcmp(cmd, "MKDIR") == 0) {
+			arg1 = strtok(NULL, " ");
+            if (arg1) {
+				str_to_lower(arg1);
+				mkdir(arg1);
+			}
+        } else if (strcmp(cmd, "MKFILE") == 0) {
+			arg1 = strtok(NULL, " ");
+            if (arg1) {
+				str_to_lower(arg1);
+				mkfile(arg1);
+			}
+        } else if (strcmp(cmd, "EDIT") == 0) {
+			arg1 = strtok(NULL, " ");
+            arg2 = strtok(NULL, "\"");
+            if (arg1 && arg2) { 
+				str_to_lower(arg1);
+				edit(arg1, arg2);
+			}
+        } else if (strcmp(cmd, "MOVE") == 0) {
+			arg1 = strtok(NULL, " ");
+            arg2 = strtok(NULL, " ");
+            if (arg1 && arg2) {
+				str_to_lower(arg1);
+				str_to_lower(arg2);
+				move(arg1, arg2);
+			}
+        } else if (strcmp(cmd, "RENAME") == 0) {
+			arg1 = strtok(NULL, " ");
+            arg2 = strtok(NULL, " ");
+            if (arg1 && arg2) {
+				str_to_lower(arg1);
+				str_to_lower(arg2);
+				fs_rename(arg1, arg2);
+			}
+        } else if (strcmp(cmd, "RM") == 0) {
+			arg1 = strtok(NULL, " ");
+            if (arg1) {
+				str_to_lower(arg1);
+				rm(arg1);
+			}
+        } else if (strcmp(cmd, "RF") == 0) {
+			arg1 = strtok(NULL, " ");
+            if (arg1) {
+				str_to_lower(arg1);
+				rf(arg1);
+			}
+        } else if (strcmp(cmd, "DEFRAG") == 0) {
+            defrag();
+        } else if (strcmp(cmd, "CLEAR") == 0) {
+            clear();
+        } else if (strcmp(cmd, "EXIT") == 0) {
+            printf("Logout\n");
+			exit = 1;
+        } else {
+            printf("[ERROR] '%s' is not a valid command.\n", cmd);
+        }
+    }
+}
 
 int main(int argc, char const *argv[]) {
-    if((argc == 3) && (!strcmp("init\0", argv[1]))) {
+    if (argc == 3 && strcmp(argv[1], "init") == 0) {
         init_fs(argv[2]);
         printf("Disco inicializado.\n");
-    } else if((argc == 3) && (!strcmp("boot\0", argv[1])) && (open_fs(argv[2]))) {
+    } else if (argc == 3 && strcmp(argv[1], "boot") == 0 && open_fs(argv[2])) {
         terminal();
         close_fs();
     } else {
-        printf("Um seguintes comandos são necessarios: \n");
-        printf("-init [diskname]\n");
-        printf("-boot [diskname]\n");  
-	}
+        printf("Uso:\n");
+        printf("  ./fs init <diskname>\n");
+        printf("  ./fs boot <diskname>\n");
+    }
     return 0;
 }
